@@ -1,0 +1,1 @@
+self.__NEXT_FONT_MANIFEST="{\"pages\":{},\"app\":{\"/Users/shadanasad/Downloads/Projects/gradegenie/frontend/app/layout\":[\"static/media/a34f9d1faa5f3315-s.p.woff2\",\"static/media/6e50af2f4c313e23-s.p.woff2\"]},\"appUsingSizeAdjust\":true,\"pagesUsingSizeAdjust\":false}"
