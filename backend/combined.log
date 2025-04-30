@@ -1,0 +1,12 @@
+{"level":"info","message":"Server is running on port 4000","timestamp":"2025-04-30T16:28:43.680Z"}
+{"level":"info","message":"MongoDB Connected: ac-ravn5pk-shard-00-00.yt5hhbh.mongodb.net","timestamp":"2025-04-30T16:28:44.547Z"}
+{"level":"info","message":"Server is running on port 4000","timestamp":"2025-04-30T16:29:14.014Z"}
+{"level":"info","message":"MongoDB Connected: ac-ravn5pk-shard-00-00.yt5hhbh.mongodb.net","timestamp":"2025-04-30T16:29:14.554Z"}
+{"level":"info","message":"Connected to MongoDB","timestamp":"2025-04-30T17:50:42.929Z"}
+{"level":"info","message":"Cleared existing data","timestamp":"2025-04-30T17:50:43.117Z"}
+{"level":"info","message":"Created admin user","timestamp":"2025-04-30T17:50:43.263Z"}
+{"level":"info","message":"Created teacher user","timestamp":"2025-04-30T17:50:43.371Z"}
+{"level":"info","message":"Created student user","timestamp":"2025-04-30T17:50:43.482Z"}
+{"level":"info","message":"Created course","timestamp":"2025-04-30T17:50:43.529Z"}
+{"level":"info","message":"Created assignment","timestamp":"2025-04-30T17:50:43.575Z"}
+{"level":"info","message":"Updated course with assignment","timestamp":"2025-04-30T17:50:43.623Z"}
