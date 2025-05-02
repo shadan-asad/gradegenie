@@ -2,6 +2,11 @@ import { Request, Response } from 'express';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { User, IUser } from '../models/User';
 import { logger } from '../utils/logger';
+import { OAuth2Client } from 'google-auth-library';
+import { Client } from '@microsoft/microsoft-graph-client';
+
+// Initialize OAuth clients
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Generate JWT Token
 const generateToken = (id: string): string => {
@@ -31,6 +36,7 @@ export const signup = async (req: Request, res: Response) => {
       password,
       role: role || 'TEACHER',
       credits: 30, // Initial credits for trial
+      provider: 'local',
     });
 
     // Generate token
@@ -83,6 +89,121 @@ export const login = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error('Login error:', error);
     res.status(500).json({ message: 'Error logging in' });
+  }
+};
+
+// @desc    Google OAuth login/signup
+// @route   POST /api/auth/google
+// @access  Public
+export const googleAuth = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body;
+    
+    // Get user info using the access token
+    const ticket = await googleClient.getTokenInfo(token);
+    const { email, sub: providerId } = ticket;
+
+    if (!email) {
+      return res.status(401).json({ message: 'Invalid Google token' });
+    }
+
+    // Get user profile using Google OAuth2 API
+    const oauth2Client = new OAuth2Client();
+    oauth2Client.setCredentials({ access_token: token });
+    const userInfoResponse = await oauth2Client.request({
+      url: 'https://www.googleapis.com/oauth2/v3/userinfo'
+    });
+
+    const userData = userInfoResponse.data as { name?: string };
+    const name = userData.name || email.split('@')[0];
+
+    // Find or create user
+    let user = await User.findOne({ email });
+    
+    if (!user) {
+      user = await User.create({
+        email,
+        name,
+        provider: 'google',
+        providerId,
+        role: 'TEACHER',
+        credits: 30,
+      });
+    } else if (user.provider !== 'google') {
+      // Update existing user to use Google auth
+      user.provider = 'google';
+      user.providerId = providerId;
+      await user.save();
+    }
+
+    // Generate token
+    const authToken = generateToken(user._id.toString());
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      credits: user.credits,
+      token: authToken,
+    });
+  } catch (error) {
+    logger.error('Google auth error:', error);
+    res.status(500).json({ message: 'Error authenticating with Google' });
+  }
+};
+
+// @desc    Microsoft OAuth login/signup
+// @route   POST /api/auth/microsoft
+// @access  Public
+export const microsoftAuth = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body;
+    
+    // Initialize Microsoft Graph client
+    const client = Client.init({
+      authProvider: (done) => {
+        done(null, token);
+      },
+    });
+
+    // Get user info from Microsoft Graph
+    const userInfo = await client.api('/me').get();
+    const { mail: email, displayName: name, id: providerId } = userInfo;
+
+    // Find or create user
+    let user = await User.findOne({ email });
+    
+    if (!user) {
+      user = await User.create({
+        email,
+        name,
+        provider: 'microsoft',
+        providerId,
+        role: 'TEACHER',
+        credits: 30,
+      });
+    } else if (user.provider !== 'microsoft') {
+      // Update existing user to use Microsoft auth
+      user.provider = 'microsoft';
+      user.providerId = providerId;
+      await user.save();
+    }
+
+    // Generate token
+    const authToken = generateToken(user._id.toString());
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      credits: user.credits,
+      token: authToken,
+    });
+  } catch (error) {
+    logger.error('Microsoft auth error:', error);
+    res.status(500).json({ message: 'Error authenticating with Microsoft' });
   }
 };
 
