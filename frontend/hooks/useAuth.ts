@@ -39,6 +39,38 @@ export const useAuth = () => {
     }
   };
 
+  const googleLogin = async (token: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await authApi.googleAuth(token);
+      localStorage.setItem('token', response.token);
+      router.push('/dashboard');
+      return response;
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'An error occurred during Google login');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const microsoftLogin = async (token: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await authApi.microsoftAuth(token);
+      localStorage.setItem('token', response.token);
+      router.push('/dashboard');
+      return response;
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'An error occurred during Microsoft login');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     router.push('/login');
@@ -61,6 +93,8 @@ export const useAuth = () => {
   return {
     signup,
     login,
+    googleLogin,
+    microsoftLogin,
     logout,
     getMe,
     loading,

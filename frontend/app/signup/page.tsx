@@ -1,4 +1,5 @@
 "use client"
+
 import Link from "next/link"
 import type React from "react"
 import { useState } from "react"
@@ -22,6 +23,8 @@ import {
 } from "lucide-react"
 import { Logo } from "@/components/logo"
 import { useAuth } from "@/hooks/useAuth"
+import { useGoogleLogin } from '@react-oauth/google'
+import { useMsal } from '@azure/msal-react'
 
 // Custom icon components
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -59,7 +62,7 @@ function MicrosoftIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export default function SignupPage() {
-  const { signup, loading, error } = useAuth();
+  const { signup, googleLogin, microsoftLogin, loading, error } = useAuth();
   const [step, setStep] = useState(1)
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
@@ -86,6 +89,31 @@ export default function SignupPage() {
       }
     }
   }
+
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (response) => {
+      try {
+        await googleLogin(response.access_token);
+      } catch (err) {
+        // Error is handled by useAuth hook
+      }
+    },
+    onError: () => {
+      console.error('Google login failed');
+    }
+  });
+
+  const { instance } = useMsal();
+  const handleMicrosoftLogin = async () => {
+    try {
+      const response = await instance.loginPopup({
+        scopes: ['user.read']
+      });
+      await microsoftLogin(response.accessToken);
+    } catch (err) {
+      console.error('Microsoft login failed:', err);
+    }
+  };
 
   const handleBack = () => {
     setStep(step - 1)
@@ -266,11 +294,21 @@ export default function SignupPage() {
             {step === 1 ? (
               <form onSubmit={handleContinue} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <Button variant="outline" className="w-full">
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    type="button"
+                    onClick={() => handleGoogleLogin()}
+                  >
                     <GoogleIcon className="mr-2 h-5 w-5" />
                     Google
                   </Button>
-                  <Button variant="outline" className="w-full">
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    type="button"
+                    onClick={handleMicrosoftLogin}
+                  >
                     <MicrosoftIcon className="mr-2 h-5 w-5" />
                     Microsoft
                   </Button>
@@ -418,7 +456,7 @@ export default function SignupPage() {
                           )}
                         </div>
                         <ul className="mb-2 space-y-1 text-sm">
-                          {plan.features.map((feature, index) => (
+                          {plan.features.map((feature: string, index: number) => (
                             <li key={index} className="flex items-center">
                               <Check className="mr-2 h-4 w-4 text-green-500" />
                               <span>{feature}</span>

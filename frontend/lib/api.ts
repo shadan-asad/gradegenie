@@ -22,7 +22,7 @@ export interface SignupData {
   email: string;
   name: string;
   password: string;
-  role?: 'ADMIN' | 'TEACHER' | 'STUDENT';
+  role?: 'TEACHER' | 'STUDENT';
 }
 
 export interface LoginData {
@@ -38,6 +38,16 @@ export const authApi = {
 
   login: async (data: LoginData) => {
     const response = await api.post('/auth/login', data);
+    return response.data;
+  },
+
+  googleAuth: async (token: string) => {
+    const response = await api.post('/auth/google', { token });
+    return response.data;
+  },
+
+  microsoftAuth: async (token: string) => {
+    const response = await api.post('/auth/microsoft', { token });
     return response.data;
   },
 
