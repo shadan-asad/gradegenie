@@ -1,7 +1,6 @@
 "use client"
 import Link from "next/link"
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,6 +21,7 @@ import {
   ShieldCheck,
 } from "lucide-react"
 import { Logo } from "@/components/logo"
+import { useAuth } from "@/hooks/useAuth"
 
 // Custom icon components
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -59,16 +59,32 @@ function MicrosoftIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export default function SignupPage() {
+  const { signup, loading, error } = useAuth();
   const [step, setStep] = useState(1)
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
+  const [password, setPassword] = useState("")
+  const [role, setRole] = useState<'TEACHER' | 'STUDENT'>('TEACHER')
   const [billingCycle, setBillingCycle] = useState("yearly")
   const [selectedPlan, setSelectedPlan] = useState("department")
 
-  const handleContinue = (e: React.FormEvent) => {
-    console.log("handleContinue")
+  const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault()
-    setStep(step + 1)
+    if (step === 1) {
+      setStep(2)
+    } else {
+      try {
+        console.log("Signing up with email:", email, "name:", name, "password:", password, "role:", role)
+        await signup({
+          email,
+          name,
+          password,
+          role,
+        });
+      } catch (err) {
+        // Error is handled by useAuth hook
+      }
+    }
   }
 
   const handleBack = () => {
@@ -281,12 +297,10 @@ export default function SignupPage() {
                       onChange={(e) => setName(e.target.value)}
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="email">Work or .edu email</Label>
                     <Input
                       id="email"
-                      name="email"
                       type="email"
                       placeholder="john@edu.com"
                       required
@@ -294,10 +308,16 @@ export default function SignupPage() {
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" name="password" type="password" placeholder="••••••••" required />
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      placeholder="••••••••"
+                      required value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
                     <p className="text-xs text-muted-foreground">Password must be at least 8 characters</p>
                   </div>
                 </div>

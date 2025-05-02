@@ -1,3 +1,4 @@
+"use client"
 import type React from "react"
 import { CheckCircle, ShieldCheck } from "lucide-react"
 import {
@@ -13,6 +14,8 @@ import {
 } from "@/components/ui"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
+import { useAuth } from "@/hooks/useAuth"
+import { useState } from "react"
 
 // Custom icon components
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -50,6 +53,19 @@ function MicrosoftIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export default function LoginPage() {
+  const { login, loading, error } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await login({ email, password });
+    } catch (err) {
+      // Error is handled by useAuth hook
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Left side - Benefits and testimonials (hidden on mobile) */}
@@ -121,42 +137,62 @@ export default function LoginPage() {
             <CardTitle className="text-center text-2xl font-bold">Log in to your account</CardTitle>
             <CardDescription className="text-center">Enter your credentials to access your dashboard</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <Button variant="outline" className="w-full">
-                <GoogleIcon className="mr-2 h-5 w-5 text-[#4285F4]" />
-                Google
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Button variant="outline" className="w-full" type="button">
+                  <GoogleIcon className="mr-2 h-5 w-5 text-[#4285F4]" />
+                  Google
+                </Button>
+                <Button variant="outline" className="w-full" type="button">
+                  <MicrosoftIcon className="mr-2 h-5 w-5 text-[#00A4EF]" />
+                  Microsoft
+                </Button>
+              </div>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t"></span>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input 
+                  id="email" 
+                  placeholder="m@example.com" 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <Link href="/forgot-password" className="text-sm text-primary underline-offset-4 hover:underline">
+                    Forgot password?
+                  </Link>
+                </div>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              {error && (
+                <div className="text-sm text-red-500">
+                  {error}
+                </div>
+              )}
+              <Button className="w-full" size="lg" type="submit" disabled={loading}>
+                {loading ? "Logging in..." : "Log in"}
               </Button>
-              <Button variant="outline" className="w-full">
-                <MicrosoftIcon className="mr-2 h-5 w-5 text-[#00A4EF]" />
-                Microsoft
-              </Button>
-            </div>
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t"></span>
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" placeholder="m@example.com" type="email" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="text-sm text-primary underline-offset-4 hover:underline">
-                  Forgot password?
-                </Link>
-              </div>
-              <Input id="password" type="password" />
-            </div>
-            <Button className="w-full" size="lg" asChild>
-              <Link href="/dashboard/assignments">Log in</Link>
-            </Button>
-          </CardContent>
+            </CardContent>
+          </form>
           <CardFooter className="flex flex-col space-y-4 border-t pt-4">
             <div className="text-center text-sm">
               Don&apos;t have an account?{" "}
