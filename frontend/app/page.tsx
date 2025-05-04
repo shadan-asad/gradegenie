@@ -1,9 +1,48 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, MessageSquare, LogOut } from "lucide-react"
 import { Logo } from "@/components/logo"
+import { useAuth } from "@/hooks/useAuth"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function Home() {
+  const { getMe, logout } = useAuth();
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
+
+    const checkAuth = async () => {
+      try {
+        const userData = await getMe();
+        setUser(userData);
+      } catch (error) {
+        setUser(null);
+        localStorage.removeItem('token');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkAuth();
+  }, []);
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background">
@@ -15,16 +54,55 @@ export default function Home() {
           </div>
           <div className="flex flex-1 items-center justify-end space-x-4">
             <nav className="flex items-center space-x-2">
-              <Link href="/login">
-                <Button variant="ghost" size="sm">
-                  Log in
-                </Button>
-              </Link>
-              <Link href="/signup">
-                <Button size="sm" className="bg-primary text-white">
-                  Sign up
-                </Button>
-              </Link>
+              {user ? (
+                <>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src="/placeholder.svg" alt={user.name} />
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {user.name?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <a href="https://gradegenie.hipporello.net/desk" target="_blank" rel="noopener noreferrer">
+                          <MessageSquare className="mr-2 h-4 w-4" />
+                          <span>Feedback</span>
+                        </a>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard">
+                          <LogOut className="mr-2 h-4 w-4" />
+                          <span>Dashboard</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={logout}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Log out</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button variant="ghost" size="sm">
+                      Log in
+                    </Button>
+                  </Link>
+                  <Link href="/signup">
+                    <Button size="sm" className="bg-primary text-white">
+                      Sign up
+                    </Button>
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
         </div>
@@ -219,7 +297,7 @@ const features = [
   {
     title: "AI Grading Assistant",
     description:
-      "GradeGenie's AI detection identifies atypical patterns, giving you insights to uphold your institution’s standards and integrity.",
+      "GradeGenie's AI detection identifies atypical patterns, giving you insights to uphold your institution's standards and integrity.",
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
