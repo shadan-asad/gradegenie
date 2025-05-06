@@ -15,6 +15,8 @@ import { PageHeader } from "@/components/page-header"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { SyllabusCreator } from "./syllabus-creator"
+import { courseApi } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -31,13 +33,49 @@ const formSchema = z.object({
   }),
 })
 
+type CourseDetails = z.infer<typeof formSchema>
+
+interface SyllabusData {
+  courseTitle: string
+  instructor: string
+  term: string
+  courseDescription: string
+  learningObjectives: string[]
+  requiredMaterials: Array<{
+    title: string
+    author: string
+    publisher: string
+    year: string
+    required: boolean
+  }>
+  gradingPolicy: {
+    assignments: { percentage: number; description: string }
+    participation: { percentage: number; description: string }
+    midterm: { percentage: number; description: string }
+    finalExam: { percentage: number; description: string }
+  }
+  weeklySchedule: Array<{
+    week: number
+    topic: string
+    readings: string
+    assignments: string
+  }>
+  policies: {
+    attendance: string
+    lateWork: string
+    academicIntegrity: string
+    accommodations: string
+  }
+}
+
 export default function CreateCoursePage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("details")
   const [isCreating, setIsCreating] = useState(false)
-  const [courseDetails, setCourseDetails] = useState(null)
+  const [courseDetails, setCourseDetails] = useState<CourseDetails | null>(null)
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<CourseDetails>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -47,18 +85,44 @@ export default function CreateCoursePage() {
     },
   })
 
-  function onSubmitDetails(values: z.infer<typeof formSchema>) {
+  async function onSubmitDetails(values: CourseDetails) {
     setCourseDetails(values)
     setActiveTab("syllabus")
   }
 
-  function onCreateCourse() {
-    setIsCreating(true)
-    // Simulate API call
-    setTimeout(() => {
+  async function onCreateCourse(syllabusData: SyllabusData) {
+    if (!courseDetails) return
+
+    try {
+      setIsCreating(true)
+      const course = await courseApi.createCourse({
+        name: courseDetails.name,
+        description: courseDetails.description,
+        subject: courseDetails.subject,
+        gradeLevel: courseDetails.gradeLevel,
+      })
+
+      // After creating the course, generate the syllabus
+      await courseApi.generateSyllabus(course._id, {
+        prompt: `Create a comprehensive syllabus for a ${courseDetails.gradeLevel} level ${courseDetails.subject} course titled "${courseDetails.name}". The course is described as: ${courseDetails.description}`,
+        additionalInfo: JSON.stringify(syllabusData),
+      })
+      
+      toast({
+        title: "Success",
+        description: "Course created successfully",
+      })
+      
+      router.push(`/dashboard/courses/${course._id}`)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create course",
+        variant: "destructive",
+      })
+    } finally {
       setIsCreating(false)
-      router.push("/dashboard/courses")
-    }, 1500)
+    }
   }
 
   return (

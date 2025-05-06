@@ -19,18 +19,27 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useParams } from "next/navigation"
+import { useCourse } from "@/hooks/useCourse"
 
-export default function CourseDetailPage({ params }: { params: { id: string } }) {
+export default function CourseDetailPage() {
+  const params = useParams()
+  const { course, syllabus, loading } = useCourse(params.id as string)
   const { toast } = useToast()
-  const [activeTab, setActiveTab] = useState("assignments")
+  const [activeTab, setActiveTab] = useState("overview")
   const [isDownloadingSyllabus, setIsDownloadingSyllabus] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false)
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
 
-  // Find the course by ID
-  const course = courses.find((c) => c.id === params.id) || courses[0]
+  if (loading) {
+    return <div>Loading...</div>
+  }
+
+  if (!course) {
+    return <div>Course not found</div>
+  }
 
   const handleGradeAssignment = (assignmentId: string) => {
     toast({
@@ -142,13 +151,59 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
             </div>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="assignments" className="space-y-4" onValueChange={setActiveTab}>
+            <Tabs defaultValue="overview" className="space-y-4" onValueChange={setActiveTab}>
               <TabsList>
+                <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="assignments">Assignments</TabsTrigger>
                 <TabsTrigger value="students">Students</TabsTrigger>
                 <TabsTrigger value="syllabus">Syllabus</TabsTrigger>
                 <TabsTrigger value="references">Grading References</TabsTrigger>
               </TabsList>
+              <TabsContent value="overview" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Course Overview</CardTitle>
+                    <CardDescription>Get a quick overview of this course</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="prose max-w-none dark:prose-invert">
+                      <h1>
+                        {course.title} ({course.code})
+                      </h1>
+                      <h2>Spring 2025</h2>
+
+                      <h3>Course Description</h3>
+                      <p>
+                        {course.description}
+                      </p>
+
+                      <h3>Learning Objectives</h3>
+                      <ul>
+                        <li>Describe key concepts, principles, and overarching themes in psychology</li>
+                        <li>Develop a working knowledge of psychology's content domains</li>
+                        <li>Apply critical thinking skills to evaluate psychological research</li>
+                        <li>Apply psychological concepts to real-world situations</li>
+                        <li>Demonstrate effective written and oral communication skills</li>
+                      </ul>
+
+                      <h3>Required Materials</h3>
+                      <ul>
+                        <li>Myers, D. G., & DeWall, C. N. (2024). Psychology (14th ed.). Worth Publishers.</li>
+                        <li>Additional readings will be provided on the course website</li>
+                      </ul>
+
+                      <h3>Assignments and Grading</h3>
+                      <ul>
+                        <li>Midterm Exam: 25%</li>
+                        <li>Final Exam: 30%</li>
+                        <li>Research Paper: 20%</li>
+                        <li>Weekly Quizzes: 15%</li>
+                        <li>Class Participation: 10%</li>
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
               <TabsContent value="assignments" className="space-y-4">
                 <Card>
                   <CardHeader>
@@ -167,7 +222,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {courseAssignments.map((assignment) => (
+                        {course.assignments.map((assignment) => (
                           <TableRow key={assignment.id}>
                             <TableCell className="font-medium">{assignment.title}</TableCell>
                             <TableCell>{assignment.dueDate}</TableCell>
@@ -228,7 +283,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {courseStudents.map((student) => (
+                        {course.students.map((student) => (
                           <TableRow key={student.id}>
                             <TableCell className="font-medium">{student.name}</TableCell>
                             <TableCell>{student.email}</TableCell>
@@ -286,10 +341,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
 
                       <h3>Course Description</h3>
                       <p>
-                        This course provides a comprehensive introduction to the scientific study of behavior and mental
-                        processes. Students will explore the major theories, concepts, and research methods in
-                        psychology, including biological bases of behavior, sensation and perception, learning, memory,
-                        cognition, development, personality, social psychology, and psychological disorders.
+                        {syllabus?.courseDescription}
                       </p>
 
                       <h3>Learning Objectives</h3>
@@ -362,7 +414,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {gradingReferences.map((reference) => (
+                            {course.gradingReferences.map((reference) => (
                               <TableRow key={reference.id}>
                                 <TableCell className="font-medium">{reference.title}</TableCell>
                                 <TableCell>
@@ -393,7 +445,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
 
                       <TabsContent value="documents" className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {gradingReferences
+                          {course.gradingReferences
                             .filter((ref) => ref.type === "Document")
                             .map((reference) => (
                               <Card key={reference.id}>
@@ -419,7 +471,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
 
                       <TabsContent value="links" className="space-y-4">
                         <div className="space-y-4">
-                          {gradingReferences
+                          {course.gradingReferences
                             .filter((ref) => ref.type === "Link")
                             .map((reference) => (
                               <div

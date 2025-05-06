@@ -13,6 +13,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { SyllabusPreview } from "./syllabus-preview"
+import api from "@/lib/api"
 
 interface SyllabusCreatorProps {
   courseDetails: {
@@ -21,14 +22,37 @@ interface SyllabusCreatorProps {
     subject: string
     gradeLevel: string
   }
-  onComplete: () => void
+  onComplete: (syllabusData: SyllabusData) => void
   isCreating: boolean
+}
+
+interface SyllabusData {
+  courseTitle: string
+  instructor: string
+  term: string
+  courseDescription: string
+  learningObjectives: string[]
+  requiredMaterials: Array<{
+    title: string
+    author: string
+    publisher: string
+    year: string
+    required: boolean
+  }>
+  gradingPolicy: Record<string, { percentage: number; description: string }>
+  weeklySchedule: Array<{
+    week: number
+    topic: string
+    readings: string
+    assignments: string
+  }>
+  policies: Record<string, string>
 }
 
 export function SyllabusCreator({ courseDetails, onComplete, isCreating }: SyllabusCreatorProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [activeTab, setActiveTab] = useState("generate")
-  const [syllabusData, setSyllabusData] = useState<any>(null)
+  const [syllabusData, setSyllabusData] = useState<SyllabusData | null>(null)
   const [prompt, setPrompt] = useState("")
   const [additionalInfo, setAdditionalInfo] = useState("")
 
@@ -38,86 +62,31 @@ export function SyllabusCreator({ courseDetails, onComplete, isCreating }: Sylla
     setPrompt(defaultPrompt)
   }, [courseDetails])
 
-  // Mock function to simulate AI generation
-  const generateSyllabus = () => {
+  // Generate syllabus using AI
+  const generateSyllabus = async () => {
     setIsGenerating(true)
+    try {
+      const response = await api.post(`/courses/syllabus/generate`, {
+        prompt,
+        additionalInfo,
+        courseDetails: {
+          name: courseDetails.name,
+          description: courseDetails.description,
+          subject: courseDetails.subject,
+          gradeLevel: courseDetails.gradeLevel
+        }
+      })
 
-    // Simulate API call delay
-    setTimeout(() => {
-      // Mock syllabus data
-      const mockSyllabus = {
-        courseTitle: courseDetails.name,
-        instructor: "Professor Name",
-        term: "Fall 2023",
-        courseDescription: courseDetails.description,
-        learningObjectives: [
-          "Understand key concepts and theories in " + courseDetails.subject,
-          "Develop critical thinking and analytical skills",
-          "Apply theoretical knowledge to practical situations",
-          "Communicate ideas effectively through writing and discussion",
-        ],
-        requiredMaterials: [
-          { title: "Main Textbook", author: "Author Name", publisher: "Publisher", year: "2022", required: true },
-          {
-            title: "Supplementary Reading",
-            author: "Author Name",
-            publisher: "Publisher",
-            year: "2020",
-            required: false,
-          },
-        ],
-        gradingPolicy: {
-          assignments: { percentage: 30, description: "Weekly assignments" },
-          participation: { percentage: 10, description: "Class participation and discussion" },
-          midterm: { percentage: 25, description: "Mid-term examination" },
-          finalExam: { percentage: 35, description: "Final examination" },
-        },
-        weeklySchedule: [
-          {
-            week: 1,
-            topic: "Introduction to the Course",
-            readings: "Chapters 1-2",
-            assignments: "Introductory Assignment",
-          },
-          { week: 2, topic: "Foundational Concepts", readings: "Chapters 3-4", assignments: "Reading Response" },
-          { week: 3, topic: "Theoretical Frameworks", readings: "Chapters 5-6", assignments: "Case Study Analysis" },
-          { week: 4, topic: "Applied Methods", readings: "Chapters 7-8", assignments: "Group Project Proposal" },
-          { week: 5, topic: "Current Developments", readings: "Chapters 9-10", assignments: "Research Paper Outline" },
-          { week: 6, topic: "Advanced Topics I", readings: "Chapters 11-12", assignments: "Problem Set" },
-          { week: 7, topic: "Advanced Topics II", readings: "Chapters 13-14", assignments: "Midterm Preparation" },
-          {
-            week: 8,
-            topic: "Midterm Examination",
-            readings: "Review All Previous Chapters",
-            assignments: "Midterm Exam",
-          },
-          { week: 9, topic: "Practical Applications I", readings: "Chapters 15-16", assignments: "Case Analysis" },
-          {
-            week: 10,
-            topic: "Practical Applications II",
-            readings: "Chapters 17-18",
-            assignments: "Group Presentation",
-          },
-          { week: 11, topic: "Integration of Concepts", readings: "Chapters 19-20", assignments: "Synthesis Paper" },
-          { week: 12, topic: "Future Directions", readings: "Chapters 21-22", assignments: "Final Project Work" },
-          { week: 13, topic: "Student Presentations", readings: "None", assignments: "Final Presentations" },
-          { week: 14, topic: "Course Review", readings: "Review All Materials", assignments: "Final Exam Preparation" },
-          { week: 15, topic: "Final Examination", readings: "None", assignments: "Final Exam" },
-        ],
-        policies: {
-          attendance:
-            "Regular attendance is required. More than three unexcused absences will result in grade reduction.",
-          lateWork: "Late assignments will be accepted with a 10% penalty per day, up to three days.",
-          academicIntegrity:
-            "Academic dishonesty, including plagiarism and cheating, will result in course failure and possible disciplinary action.",
-          accommodations: "Reasonable accommodations will be made for students with documented disabilities.",
-        },
+      if (response.data) {
+        setSyllabusData(response.data)
+        setActiveTab("edit")
       }
-
-      setSyllabusData(mockSyllabus)
+    } catch (error) {
+      console.error('Error generating syllabus:', error)
+      // You might want to show an error toast here
+    } finally {
       setIsGenerating(false)
-      setActiveTab("edit")
-    }, 3000)
+    }
   }
 
   return (
@@ -611,7 +580,7 @@ export function SyllabusCreator({ courseDetails, onComplete, isCreating }: Sylla
                     <Edit2 className="mr-2 h-4 w-4" />
                     Edit
                   </Button>
-                  <Button onClick={onComplete} disabled={isCreating}>
+                  <Button onClick={() => onComplete(syllabusData)} disabled={isCreating}>
                     {isCreating ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

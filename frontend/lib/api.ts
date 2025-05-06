@@ -18,6 +18,14 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
+// Helper function to get auth token
+const getToken = () => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('token');
+  }
+  return null;
+};
+
 export interface SignupData {
   email: string;
   name: string;
@@ -64,6 +72,83 @@ export const authApi = {
   resetPassword: async (token: string, password: string) => {
     const response = await api.post('/auth/reset-password', { token, password });
     return response.data;
+  },
+};
+
+// Course API
+export const courseApi = {
+  createCourse: async (data: {
+    name: string;
+    description?: string;
+    subject: string;
+    gradeLevel: string;
+  }) => {
+    const response = await fetch(`${API_URL}/courses`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to create course');
+    return response.json();
+  },
+
+  getCourses: async () => {
+    const response = await fetch(`${API_URL}/courses`, {
+      headers: {
+        Authorization: `Bearer ${getToken()}`,
+      },
+    });
+    if (!response.ok) throw new Error('Failed to fetch courses');
+    return response.json();
+  },
+
+  getCourse: async (courseId: string) => {
+    const response = await fetch(`${API_URL}/courses/${courseId}`, {
+      headers: {
+        Authorization: `Bearer ${getToken()}`,
+      },
+    });
+    if (!response.ok) throw new Error('Failed to fetch course');
+    return response.json();
+  },
+
+  generateSyllabus: async (courseId: string, data: { prompt: string; additionalInfo?: string }) => {
+    const response = await fetch(`${API_URL}/courses/${courseId}/syllabus/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to generate syllabus');
+    return response.json();
+  },
+
+  updateSyllabus: async (courseId: string, data: any) => {
+    const response = await fetch(`${API_URL}/courses/${courseId}/syllabus`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to update syllabus');
+    return response.json();
+  },
+
+  getSyllabus: async (courseId: string) => {
+    const response = await fetch(`${API_URL}/courses/${courseId}/syllabus`, {
+      headers: {
+        Authorization: `Bearer ${getToken()}`,
+      },
+    });
+    if (!response.ok) throw new Error('Failed to fetch syllabus');
+    return response.json();
   },
 };
 
