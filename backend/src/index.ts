@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import connectDB from './config/database';
 import authRoutes from './routes/authRoutes';
+import courseRoutes from './routes/courseRoutes';
 import { logger } from './utils/logger';
 
 // Load environment variables
@@ -26,6 +27,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/courses', courseRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
